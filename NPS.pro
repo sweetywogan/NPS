@@ -16,11 +16,16 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
+#    analyze.cpp \
     main.cpp \
-    nps.cpp
+    nps.cpp \
+#    sniffer.cpp
 
 HEADERS += \
-    nps.h
+#    analyze.h \
+    nps.h \
+    protocol.h \
+#    sniffer.h
 
 FORMS += \
     nps.ui
