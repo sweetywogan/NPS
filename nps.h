@@ -12,17 +12,14 @@ class nps : public QMainWindow
     Q_OBJECT
 
 public:
+    Ui::nps *ui;
     nps(QWidget *parent = nullptr);
     ~nps();
 
 private slots:
     void on_startButton_clicked();
-
     void on_stopButton_clicked();
-
     void on_clearButton_clicked();
-
-private:
-    Ui::nps *ui;
+    void sniffer();
 };
 #endif // NPS_H

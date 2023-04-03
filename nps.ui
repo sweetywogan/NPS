@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1676</width>
-    <height>938</height>
+    <width>1721</width>
+    <height>1313</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -17,7 +17,7 @@
    <widget class="QLabel" name="label">
     <property name="geometry">
      <rect>
-      <x>1470</x>
+      <x>1520</x>
       <y>20</y>
       <width>171</width>
       <height>34</height>
@@ -30,8 +30,8 @@
    <widget class="QPushButton" name="startButton">
     <property name="geometry">
      <rect>
-      <x>40</x>
-      <y>50</y>
+      <x>920</x>
+      <y>60</y>
       <width>170</width>
       <height>48</height>
      </rect>
@@ -46,8 +46,8 @@
     </property>
     <property name="geometry">
      <rect>
-      <x>240</x>
-      <y>50</y>
+      <x>1120</x>
+      <y>60</y>
       <width>170</width>
       <height>48</height>
      </rect>
@@ -60,7 +60,7 @@
     <property name="geometry">
      <rect>
       <x>40</x>
-      <y>480</y>
+      <y>910</y>
       <width>1241</width>
       <height>311</height>
      </rect>
@@ -69,8 +69,8 @@
    <widget class="QPushButton" name="clearButton">
     <property name="geometry">
      <rect>
-      <x>440</x>
-      <y>50</y>
+      <x>1320</x>
+      <y>60</y>
       <width>170</width>
       <height>48</height>
      </rect>
@@ -84,13 +84,13 @@
      <rect>
       <x>40</x>
       <y>150</y>
-      <width>1241</width>
-      <height>261</height>
+      <width>1661</width>
+      <height>681</height>
      </rect>
     </property>
     <column>
      <property name="text">
-      <string>No.</string>
+      <string>num</string>
      </property>
     </column>
     <column>
@@ -108,6 +108,34 @@
       <string>protocol</string>
      </property>
     </column>
+    <column>
+     <property name="text">
+      <string>length</string>
+     </property>
+    </column>
+   </widget>
+   <widget class="QLineEdit" name="filterLine">
+    <property name="geometry">
+     <rect>
+      <x>180</x>
+      <y>70</y>
+      <width>631</width>
+      <height>42</height>
+     </rect>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_2">
+    <property name="geometry">
+     <rect>
+      <x>30</x>
+      <y>70</y>
+      <width>141</width>
+      <height>34</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>过滤规则：</string>
+    </property>
    </widget>
   </widget>
   <widget class="QMenuBar" name="menubar">
@@ -115,7 +143,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1676</width>
+     <width>1721</width>
      <height>48</height>
     </rect>
    </property>
