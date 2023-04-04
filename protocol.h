@@ -50,7 +50,7 @@ struct ip
     u_short ipOffset;
     u_char ipTtl; //time to live
     u_char ipProtocol;
-    u_char ipCkSum;
+    u_short ipCkSum;
     u_char ipS[ipAddr]; //source
     u_char ipD[ipAddr]; //destination
 };

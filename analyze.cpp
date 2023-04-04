@@ -243,12 +243,12 @@ QString analyze::udpAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, cons
 QString analyze::ipAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, const u_char *packet)
 {
     struct ip *ipHead;
-    ipHead = (struct ip *)(packet + ethernetAddr);
+    ipHead = (struct ip *)(packet + ethernetHead);
 
     QString res;
     res.clear();
     char tmp[50] = {0};
-
+/*
     printf("Version: %d\n", (ipHead -> ipHV & 0xf0) >> 4);
     sprintf(tmp, "Version: %d\n", (ipHead -> ipHV & 0xf0) >> 4);
     res += tmp;
@@ -284,34 +284,43 @@ QString analyze::ipAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, const
     printf("Check Summary: %d\n", ipHead -> ipCkSum);
     sprintf(tmp, "Check Summary: %d\n", ipHead -> ipCkSum);
     res += tmp;
-
+*/
 
     printf("IP source: ");
-    res += "IP source: ";
-    for(int i = 0; i < ipAddr; i++)
+//    res += "IP source: ";
+    for(int i = 0; i < ipAddr-1; i++)
     {
         printf("%d.", ipHead -> ipS[i]);
         sprintf(tmp, "%d.", ipHead -> ipS[i]);
         res += tmp;
     }
+    printf("%d", ipHead -> ipS[ipAddr-1]);
+    sprintf(tmp, "%d", ipHead -> ipS[ipAddr-1]);
+    res += tmp;
+
+    res += '#';
 
     printf("\nIP destination: ");
-    res += "\nIP destination: ";
-    for(int i = 0; i < ipAddr; i++)
+//    res += "\nIP destination: ";
+    for(int i = 0; i < ipAddr-1; i++)
     {
         printf("%d.", ipHead -> ipD[i]);
         sprintf(tmp, "%d.", ipHead -> ipD[i]);
         res += tmp;
     }
+    printf("%d", ipHead -> ipS[ipAddr-1]);
+    sprintf(tmp, "%d", ipHead -> ipS[ipAddr-1]);
+    res += tmp;
+
     printf("\n");
-    res += "\n";
+//    res += "\n";
 
     u_char protocol = ipHead -> ipProtocol;
     if(protocol == 0x01)
     {
         printf("#######ICMP!\n");
-        res += "\nICMP!\n";
-        res += icmpAnalyze(arg, pcapPkt, packet);
+        res += "ICMP";
+//        res += icmpAnalyze(arg, pcapPkt, packet);
         icmpCnt ++;
         icmpFlow += pcapPkt->caplen;
     }
@@ -324,25 +333,25 @@ QString analyze::ipAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, const
     {
     case 0x06:
         printf("#######TCP!\n");
-        res += "TCP!\n";
-        res += tcpAnalyze(arg, pcapPkt, packet);
+        res += "TCP";
+//        res += tcpAnalyze(arg, pcapPkt, packet);
         tcpFlow += pcapPkt->caplen;
         tcpCnt ++;
         break;
     case 0x11:
         printf("#######UDP!\n");
-        res += "UDP!\n";
-        res += udpAnalyze(arg, pcapPkt, packet);
+        res += "UDP";
+//        res += udpAnalyze(arg, pcapPkt, packet);
         udpFlow += pcapPkt->caplen;
         udpCnt ++;
         break;
     case 0x02:
         printf("#######IGMP!\n");
-        res += "IGMP!\n";
+        res += "IGMP";
         break;
     default:
         printf("Other Transport Layer protocol!\n");
-        res += "Other Transport Layer protocol!\n";
+        res += "Other";
         break;
     }
     return res;
