@@ -18,8 +18,8 @@ public:
 
 private slots:
     void on_startButton_clicked();
-    void on_stopButton_clicked();
     void on_clearButton_clicked();
-    void sniffer();
+    void updateData(QString str,int flag);
+    void set_filter();
 };
 #endif // NPS_H

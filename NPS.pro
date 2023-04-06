@@ -19,10 +19,12 @@ SOURCES += \
     analyze.cpp \
     main.cpp \
     nps.cpp \
+    pcap_thread.cpp
 
 HEADERS += \
     analyze.h \
     nps.h \
+    pcap_thread.h \
     protocol.h \
 
 FORMS += \

@@ -3,32 +3,28 @@
 #include <pcap.h>
 #include "protocol.h"
 #include "analyze.h"
+#include "pcap_thread.h"
 
 #define PROM 1
 //promiscuous mode
 
 char filter[128]; //过滤条件
-char *dev; //抓包设备
-//int flowTotal = 0; //总流量计数
-int ipv4Flow = 0, ipv6Flow = 0, arpFlow = 0, rarpFlow = 0;
-int ipv4Cnt = 0, ipv6Cnt = 0, arpCnt = 0, rarpCnt = 0;
-int tcpFlow = 0, udpFlow = 0, icmpFlow = 0;
-int tcpCnt = 0, udpCnt = 0, icmpCnt = 0;
-int otherCnt = 0, otherFlow = 0;
-int num = 0;
-QString ipsource,ipdestination,protocol,length;
-
-pcap_t *pcap;
-struct bpf_program bp;
+int number = 0;
 
 nps::nps(QWidget *parent)
     : QMainWindow(parent)
     , ui(new Ui::nps)
 {
+
     ui->setupUi(this);
     //tree widget
     ui->treeWidget->setHeaderLabels(QStringList() << "num" << "IP source" << "IP destination" << "protocol" << "length");
-    ui->treeWidget->setColumnWidth(0, 170);
+    ui->treeWidget->setColumnWidth(0, 250);
+    ui->treeWidget->setColumnWidth(1, 400);
+    ui->treeWidget->setColumnWidth(2, 300);
+    ui->treeWidget->setColumnWidth(3, 150);
+    ui->treeWidget->setColumnWidth(4, 100);
+
 }
 
 nps::~nps()
@@ -36,264 +32,87 @@ nps::~nps()
     delete ui;
 }
 
-
-void nps::on_startButton_clicked()
+//更新ui
+void nps::updateData(QString str,int flag)
 {
-    ui->textBrowser->append("开始捕获！");
-    ui->startButton->setEnabled(false);
-    ui->stopButton->setEnabled(true);
-    sniffer();
+    if(flag==0)
+    {
+        ui->textBrowser->append(str);
+    }else if(flag==1){
+        QStringList strList = str.split('@');
+        QString num = strList[0];
+        QString mac_res = strList[1];
+        QString netandtran_res = strList[2];
+        QString head_item = strList[3];
+        QString length = strList[4];
+        QString raw_res = strList[5];
+
+        QStringList headList = head_item.split('#');
+        QString ipsource = headList[0];
+        QString ipdestination = headList[1];
+        QString protocol = headList[2];
+
+        QTreeWidgetItem * topInfo = new QTreeWidgetItem(QStringList() << QString(num) << QString(ipsource) << QString(ipdestination) << QString(protocol) << QString(length));
+        ui->treeWidget->addTopLevelItem(topInfo);
+
+        QTreeWidgetItem *linkInfo = new QTreeWidgetItem(QStringList() << "数据链路层" << mac_res);
+        topInfo->addChild(linkInfo);
+
+        if(str.contains(QChar('$')))
+        {
+            QStringList netList = netandtran_res.split('$');
+            QString net_res = netList[0];
+            QString tran_res = netList[1];
+            QTreeWidgetItem *netInfo = new QTreeWidgetItem(QStringList() << "网络层" << net_res);
+            QTreeWidgetItem *transInfo = new QTreeWidgetItem(QStringList() << "传输层" << tran_res);
+            topInfo->addChild(netInfo);
+            topInfo->addChild(transInfo);
+        }else{
+            QTreeWidgetItem *netandtransInfo = new QTreeWidgetItem(QStringList() << "网络层" << netandtran_res);
+            topInfo->addChild(netandtransInfo);
+        }
+
+        QTreeWidgetItem *pInfo = new QTreeWidgetItem(QStringList() << "原始数据包" << raw_res);
+        topInfo->addChild(pInfo);
+    }
 
 }
 
-void nps::on_stopButton_clicked()
+void nps::on_startButton_clicked()
 {
-    ui->textBrowser->append("停止捕获！");
-    ui->stopButton->setEnabled(false);
-    ui->startButton->setEnabled(true);
-    //关闭设备
-    pcap_breakloop(pcap);
-    ui->textBrowser->append(QString("Sniffer stop!\n"));
+    pcap_thread *pcapthread = new pcap_thread();
+    connect(pcapthread, &pcap_thread::dataReady, this, &nps::updateData);
+
+    if(ui->startButton->text()=="开始"){
+        ui->textBrowser->append("开始捕获！");
+        ui->startButton->setText("停止");
+        set_filter();
+        pcapthread->start();
+    }else if (ui->startButton->text()=="停止") {
+        ui->textBrowser->append("停止捕获！");
+        ui->startButton->setText("开始");
+        //关闭设备
+        pcapthread->wait();
+        delete pcapthread;
+        ui->textBrowser->append("已抓到数据包"+QString::number(number)+"个\n");
+    }
 }
 
 void nps::on_clearButton_clicked()
 {
+    number=0;
     ui->textBrowser->clear();
     ui->treeWidget->clear();
-    num =0;
     ui->filterLine->clear();
 }
 
-void loop_callback(u_char *args, const struct pcap_pkthdr *header, const u_char *packet)
+void nps::set_filter()
 {
-    Ui::nps *ui = (Ui::nps *)args;
-//    int l = (*header).len;
-//    printf("Jacked a packet with length of %d\n",l);
-
-    analyze analyze;
-
-    struct ethernet *eHead;
-    u_short protocol_num;
-
-    int flow = header -> caplen;
-//    flowTotal += flow;
-
-    printf("#########################################\n");
-    printf("~~~~~~~~~~~~~device: %s~~~~~~~~~~~~~\n", dev);
-    printf("~~~~~~~~~~~~~filter: %s~~~~~~~~~~~~~\n", filter);
-    printf("~~~~~~~~~~~~~analyze information~~~~~~~~~~~~~\n");
-    printf("num: %d\n", ++num);
-    printf("packet length: %d\n", flow);
-//    printf("receive time: %s\n", time);
-//    QTreeWidgetItem * topInfo = new QTreeWidgetItem(QStringList() << QString::number(num) << QString("0.0.0.0") <<QString("1.1.1.1")<<QString("tcp")<<QString("长度：4%").arg(flow));
-
-
-    char tmp[3] = {0};
-    QString res;
-    QString mac_res;
-    for(int i = 0; i < header->len; i++)
-    {
-        printf("%02x ", packet[i]);
-        sprintf(tmp, "%02x ", packet[i]);
-        mac_res += tmp;
-        if((i+1) % 16 ==0)
-        {
-            printf("\n");
-            sprintf(tmp, "\n");
-            mac_res += tmp;
-        }
-    }
-
-
-    res.clear();
-
-    printf("\n\n");
-
-    eHead = (struct ethernet*)packet;
-    printf("************ 数据链路层 ************\n");
-    printf("~~~~~~~data link layer~~~~~~~\n");
-    printf("Mac source: ");
-    res += "Mac source: ";
-        for(int i = 0; i < ethernetAddr; i++)
-        {
-            if(ethernetAddr - 1 == i)
-            {
-                printf("%02x\n", eHead -> etherHostS[i]);
-                sprintf(tmp, "%02x\n", eHead -> etherHostS[i]);
-                res += tmp;
-            }
-            else
-            {
-                printf("%02x:", eHead -> etherHostS[i]);
-                sprintf(tmp, "%02x:", eHead -> etherHostS[i]);
-                res += tmp;
-            }
-        }
-        printf("Mac destination: ");
-        res += "Mac destination: ";
-        for(int i = 0; i < ethernetAddr; i++)
-        {
-            if(ethernetAddr - 1 == i)
-            {
-                printf("%02x\n", eHead -> etherHostD[i]);
-                sprintf(tmp, "%02x\n", eHead -> etherHostD[i]);
-                res += tmp;
-            }
-            else
-            {
-                printf("%02x:", eHead -> etherHostD[i]);
-                sprintf(tmp, "%02x:", eHead -> etherHostD[i]);
-                res += tmp;
-            }
-        }
-//        QTreeWidgetItem * linkInfo = new QTreeWidgetItem(QStringList() << "数据链路层" << res);
-//        topInfo->addChild(linkInfo);
-        res.clear();
-
-        protocol_num = ntohs(eHead -> etherType);
-
-        QStringList resList;
-//        QTreeWidgetItem *netInfo, *transInfo;
-        printf("************ 网络层 ************\n");
-        printf("~~~~~~network layer~~~~~~\n");
-        switch (protocol_num)
-        {
-        case 0x0800:
-            printf("#######IPv4!\n");
-//            res += "IPv4!\n";
-            res += analyze.ipAnalyze(args, header, packet);
-            ui->textBrowser->append(res);
-            resList = res.split('#');
-            ipsource=resList[0];
-            ipdestination=resList[1];
-            protocol=resList[2];
-//            netInfo = new QTreeWidgetItem(QStringList() << "网络层" << resList[0]);
-//            topInfo->addChild(netInfo);
-//            transInfo = new QTreeWidgetItem(QStringList() << "传输层" << resList[1]);
-//            topInfo->addChild(transInfo);
-            res.clear();
-            resList.clear();
-            ipv4Flow += flow;
-            ipv4Cnt ++;
-            break;
-        case 0x0806:
-            printf("#######ARP!\n");
-            res += "ARP!\n";
-            res += analyze.arpAnalyze(args, header, packet);
-            arpFlow += flow;
-            arpCnt ++;
-            protocol="ARP";
-            break;
-        case 0x0835:
-            printf("#######RARP!\n");
-            res += "RARP!\n";
-            rarpFlow += flow;
-            rarpCnt ++;
-            protocol="RARP";
-            break;
-        case 0x08DD:
-            printf("#######IPv6!\n");
-            res += "IPv6!\n";
-            ipv6Flow += flow;
-            ipv6Cnt ++;
-            protocol="IPv6";
-            break;
-        default:
-            printf("Other network layer protocol!\n");
-            res += "Other";
-            otherCnt ++;
-            otherFlow += flow;
-            protocol="Other";
-            break;
-        }
-        if(!res.isEmpty())
-        {
-//            netInfo = new QTreeWidgetItem(QStringList() << "网络层" << res);
-//            topInfo->addChild(netInfo);
-            res.clear();
-        }
-
-        printf("~~~~~~~~~~~~~Done~~~~~~~~~~~~~\n");
-        printf("#########################################\n\n\n");
-
-        QTreeWidgetItem * topInfo = new QTreeWidgetItem(QStringList() << QString::number(num) << QString(ipsource) << QString(ipdestination) << QString(protocol) << QString::number(flow));
-        ui->treeWidget->addTopLevelItem(topInfo);
-        QTreeWidgetItem *pInfo = new QTreeWidgetItem(QStringList() << "数据包内容" << mac_res);
-        topInfo->addChild(pInfo);
-
-}
-
-void nps::sniffer()
-{
-    char errbuf[PCAP_ERRBUF_SIZE];
-    pcap_if_t *allDev;
-    bpf_u_int32 net;
-    bpf_u_int32 mask;
-
-    ui->textBrowser->append("Finding deveice ......");
-    if(pcap_findalldevs(&allDev, errbuf) == -1)
-    {
-        ui->textBrowser->append(QString("No device has been found!"));
-        printf("No device has been found! \n");
-    }
-    dev = allDev -> name;
-    ui->textBrowser->append(QString("Find the deveice:%2").arg(dev));
-
-    //打开设备网络
-    ui->textBrowser->append("Opening the device ......");
-    pcap = pcap_open_live(dev, snapLen, PROM, 0, errbuf);
-    if(pcap == nullptr)
-    {
-        ui->textBrowser->insertPlainText(QString("Open error:"));
-        ui->textBrowser->append(errbuf);
-        printf("Open error: %s\n", errbuf);
-    }else{
-        ui->textBrowser->append("Device opened!\n");
-    }
-
-    if(pcap_lookupnet(dev, &net, &mask, errbuf) == -1)
-    {
-        ui->textBrowser->insertPlainText(QString("Could not found netmask for device %2!").arg(dev));
-        printf("Could not found netmask for device %s!\n", dev);
-        net = 0;
-        mask = 0;
-    }
-
-    QApplication::processEvents();
-
-//    char filter_exp[]="";
-//    if (pcap_compile(pcap, &bp, filter_exp, 0, net) == -1)
-//    {
-//        ui->textBrowser->append(QString("couldn't parse filter %s: %s\n").arg(filter_exp).arg(pcap_geterr(pcap)));
-//    }
-//    if (pcap_setfilter(pcap, &bp) == -1) {
-//        ui->textBrowser->append(QString("couldn't install filter %s: %s\n").arg(filter_exp).arg(pcap_geterr(pcap)));
-//    }
-
-
-    //读取过滤条件
+    strcpy(filter,"");
     if(!ui->filterLine->text().isEmpty())
     {
         strcpy(filter, ui->filterLine->text().toUtf8().data());
-        if(pcap_compile(pcap, &bp, filter, 0, net) == -1) //编译
-        {
-            printf("Could not parse filter!\n");
-            ui->textBrowser->append(QString("Could not parse filter!"));
-            exit(-2);
-        }
-        if(pcap_setfilter(pcap, &bp) == -1) //安装
-        {
-            printf("Could not install filter!\n");
-            ui->textBrowser->append(QString("Could not install filter!"));
-            exit(-2);
-        }
+        ui->textBrowser->append("过滤条件："+QString::fromUtf8(filter));
     }
-
-    //开始抓取
-    ui->textBrowser->append("Snaping ... ...\n");
-    QApplication::processEvents();
-    pcap_dispatch(pcap, -1, loop_callback, (u_char *) ui);
-
-    pcap_close(pcap);
 }
 

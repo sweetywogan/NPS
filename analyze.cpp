@@ -7,15 +7,14 @@
 
 extern char filter[128]; //过滤条件
 extern char *dev; //抓包设备
-extern int tcpFlow, udpFlow, icmpFlow;
-extern int tcpCnt, udpCnt, icmpCnt;
 
 //arp协议头分析
 QString analyze::arpAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, const u_char *packet)
 {
-    struct arp *aHead = (struct arp *)(packet + ethernetAddr);
+    struct arp *aHead = (struct arp *)(packet + ethernetHead);
 
     QString res;
+    QString ip_res;
     res.clear();
     char tmp[50] = {0};
 
@@ -60,54 +59,91 @@ QString analyze::arpAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, cons
     res += "MAC source: ";
     for(int i = 0; i < ethernetAddr; i++)
     {
-        printf("%02x: ", aHead -> arpSM[i]);
-        sprintf(tmp, "%02x:", aHead -> arpSM[i]);
-        res += tmp;
+        if(ethernetAddr-1 == i)
+        {
+            printf("%02x", aHead -> arpSM[i]);
+            sprintf(tmp, "%02x", aHead -> arpSM[i]);
+            res += tmp;
+        }else{
+            printf("%02x:", aHead -> arpSM[i]);
+            sprintf(tmp, "%02x:", aHead -> arpSM[i]);
+            res += tmp;
+        }
     }
+
 
     printf("\nMAC destination: ");
     res += "\nMAC destination: ";
     for(int i = 0; i < ethernetAddr; i++)
     {
-        printf("%02x: ", aHead -> arpDM[i]);
-        sprintf(tmp, "%02x: ", aHead -> arpDM[i]);
-        res += tmp;
+        if(ethernetAddr-1 ==i)
+        {
+            printf("%02x", aHead -> arpDM[i]);
+            sprintf(tmp, "%02x", aHead -> arpDM[i]);
+            res += tmp;
+        }else{
+            printf("%02x:", aHead -> arpDM[i]);
+            sprintf(tmp, "%02x: ", aHead -> arpDM[i]);
+            res += tmp;
+        }
     }
 
-    printf("\nIP source");
-    res += "\nIP source";
+    printf("\nIP source:");
+    res += "\nIP source:";
     for(int i = 0; i < ipAddr; i++)
     {
-        printf("%d.", aHead -> arpSI[i]);
-        sprintf(tmp, "%d.", aHead -> arpSI[i]);
-        res += tmp;
+        if(ipAddr-1==i){
+            printf("%d", aHead -> arpSI[i]);
+            sprintf(tmp, "%d", aHead -> arpSI[i]);
+            res += tmp;
+            ip_res += tmp;
+        }else{
+            printf("%d.", aHead -> arpSI[i]);
+            sprintf(tmp, "%d.", aHead -> arpSI[i]);
+            res += tmp;
+            ip_res += tmp;
+        }
     }
 
-    printf("\nIP destination");
-    res += "\nIP destination";
+    ip_res += '#';
+
+    printf("\nIP destination:");
+    res += "\nIP destination:";
     for(int i = 0; i < ipAddr; i++)
     {
-        printf("%d.", aHead -> arpDI[i]);
-        sprintf(tmp, "%d.", aHead -> arpDI[i]);
-        res += tmp;
-    }
+        if(ipAddr-1==i){
+            printf("%d", aHead -> arpDI[i]);
+            sprintf(tmp, "%d", aHead -> arpDI[i]);
+            res += tmp;
+            ip_res += tmp;
+        }else {
+            printf("%d.", aHead -> arpDI[i]);
+            sprintf(tmp, "%d.", aHead -> arpDI[i]);
+            res += tmp;
+            ip_res += tmp;
+        }
 
-    printf("\n\n");
-    return res;
+    }
+    ip_res += '#';
+
+    ip_res += "ARP";
+
+    printf("\n");
+    return res+'@'+ip_res;
 }
 
 //icmp协议头分析
 QString analyze::icmpAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, const u_char *packet)
 {
-    struct icmp *icmpHead = (struct icmp *)(packet + ethernetAddr + ipHead(packet));
+    struct icmp *icmpHead = (struct icmp *)(packet + ethernetHead + ipHead(packet));
     u_char icmpType = icmpHead -> icmpType;
 
     QString res;
     res.clear();
     char tmp[50] = {0};
 
-    printf("ICMP type: %d  ", icmpHead -> icmpType);
-    sprintf(tmp, "ICMP type: %d  ", icmpHead -> icmpType);
+    printf("\nICMP type: %d  ", icmpHead -> icmpType);
+    sprintf(tmp, "\nICMP type: %x  ", icmpHead -> icmpType);
     res += tmp;
     switch (icmpType)
     {
@@ -125,11 +161,11 @@ QString analyze::icmpAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, con
         break;
     }
     printf("ICMP code: %d\n", icmpHead -> icmpCode);
-    sprintf(tmp, "ICMP code: %d\n", icmpHead -> icmpCode);
+    sprintf(tmp, "ICMP code: %x\n", icmpHead -> icmpCode);
     res += tmp;
 
     printf("ICMP check summary: %d\n", icmpHead -> icmpCkSum);
-    sprintf(tmp, "ICMP check summary: %d\n", icmpHead -> icmpCkSum);
+    sprintf(tmp, "ICMP check summary: %d", icmpHead -> icmpCkSum);
     res += tmp;
 
     return res;
@@ -162,7 +198,7 @@ char *tcpFlagAnalyze(const u_char tcpFlags)
 //tcp协议头分析
 QString analyze::tcpAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, const u_char *packet)
 {
-    struct tcp *tHead = (struct tcp *)(packet + ethernetAddr + ipHead(packet));
+    struct tcp *tHead = (struct tcp *)(packet + ethernetHead + ipHead(packet));
 
     QString res;
     res.clear();
@@ -205,7 +241,7 @@ QString analyze::tcpAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, cons
     res += tmp;
 
     printf("Urgent pointer: %d\n", ntohs(tHead -> tcpUrgP));
-    sprintf(tmp, "Urgent pointer: %d\n", ntohs(tHead -> tcpUrgP));
+    sprintf(tmp, "Urgent pointer: %d", ntohs(tHead -> tcpUrgP));
     res += tmp;
 
     return res;
@@ -214,7 +250,7 @@ QString analyze::tcpAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, cons
 //udp协议头分析
 QString analyze::udpAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, const u_char *packet)
 {
-    struct udp *uHead = (struct udp *)(packet + ethernetAddr + ipHead(packet));
+    struct udp *uHead = (struct udp *)(packet + ethernetHead + ipHead(packet));
 
     QString res;
     res.clear();
@@ -233,7 +269,7 @@ QString analyze::udpAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, cons
     res += tmp;
 
     printf("UDP check summary: %d\n", ntohs(uHead -> udpCkSum));
-    sprintf(tmp, "UDP check summary: %d\n", ntohs(uHead -> udpCkSum));
+    sprintf(tmp, "UDP check summary: %d", ntohs(uHead -> udpCkSum));
     res += tmp;
 
     return res;
@@ -246,9 +282,11 @@ QString analyze::ipAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, const
     ipHead = (struct ip *)(packet + ethernetHead);
 
     QString res;
+    QString ip_res;
     res.clear();
+    ip_res.clear();
     char tmp[50] = {0};
-/*
+
     printf("Version: %d\n", (ipHead -> ipHV & 0xf0) >> 4);
     sprintf(tmp, "Version: %d\n", (ipHead -> ipHV & 0xf0) >> 4);
     res += tmp;
@@ -284,75 +322,86 @@ QString analyze::ipAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, const
     printf("Check Summary: %d\n", ipHead -> ipCkSum);
     sprintf(tmp, "Check Summary: %d\n", ipHead -> ipCkSum);
     res += tmp;
-*/
+
 
     printf("IP source: ");
-//    res += "IP source: ";
-    for(int i = 0; i < ipAddr-1; i++)
+    res += "IP source: ";
+    for(int i = 0; i < ipAddr; i++)
     {
-        printf("%d.", ipHead -> ipS[i]);
-        sprintf(tmp, "%d.", ipHead -> ipS[i]);
-        res += tmp;
+        if(ipAddr-1==i)
+        {
+            printf("%d", ipHead -> ipS[i]);
+            sprintf(tmp, "%d", ipHead -> ipS[i]);
+            res += tmp;
+            ip_res += tmp;
+        }else
+        {
+            printf("%d.", ipHead -> ipS[i]);
+            sprintf(tmp, "%d.", ipHead -> ipS[i]);
+            res += tmp;
+            ip_res += tmp;
+        }
     }
-    printf("%d", ipHead -> ipS[ipAddr-1]);
-    sprintf(tmp, "%d", ipHead -> ipS[ipAddr-1]);
-    res += tmp;
 
-    res += '#';
+    ip_res += '#';
 
     printf("\nIP destination: ");
-//    res += "\nIP destination: ";
-    for(int i = 0; i < ipAddr-1; i++)
+    res += "\nIP destination: ";
+    for(int i = 0; i < ipAddr; i++)
     {
-        printf("%d.", ipHead -> ipD[i]);
-        sprintf(tmp, "%d.", ipHead -> ipD[i]);
-        res += tmp;
+        if(ipAddr-1==i)
+        {
+            printf("%d", ipHead -> ipD[i]);
+            sprintf(tmp, "%d", ipHead -> ipD[i]);
+            res += tmp;
+            ip_res += tmp;
+        }else {
+            printf("%d.", ipHead -> ipD[i]);
+            sprintf(tmp, "%d.", ipHead -> ipD[i]);
+            res += tmp;
+            ip_res += tmp;
+        }
     }
-    printf("%d", ipHead -> ipS[ipAddr-1]);
-    sprintf(tmp, "%d", ipHead -> ipS[ipAddr-1]);
-    res += tmp;
+
+    ip_res += '#';
 
     printf("\n");
-//    res += "\n";
 
     u_char protocol = ipHead -> ipProtocol;
-    if(protocol == 0x01)
-    {
-        printf("#######ICMP!\n");
-        res += "ICMP";
-//        res += icmpAnalyze(arg, pcapPkt, packet);
-        icmpCnt ++;
-        icmpFlow += pcapPkt->caplen;
-    }
-
 
     printf("************** 传输层 **************\n");
-    printf("~~~~~~~transport layer~~~~~~~\n");
-    res += '#';
+
     switch (protocol)
     {
-    case 0x06:
-        printf("#######TCP!\n");
-        res += "TCP";
-//        res += tcpAnalyze(arg, pcapPkt, packet);
-        tcpFlow += pcapPkt->caplen;
-        tcpCnt ++;
-        break;
-    case 0x11:
-        printf("#######UDP!\n");
-        res += "UDP";
-//        res += udpAnalyze(arg, pcapPkt, packet);
-        udpFlow += pcapPkt->caplen;
-        udpCnt ++;
+    case 0x01:
+        printf("#######ICMP!\n");
+        ip_res += "ICMP";
+        res += icmpAnalyze(arg, pcapPkt, packet);
         break;
     case 0x02:
         printf("#######IGMP!\n");
         res += "IGMP";
+        ip_res += "IGMP";
+        break;
+    case 0x06:
+        res += "$";
+        printf("#######TCP!\n");
+        ip_res += "TCP";
+        res += tcpAnalyze(arg, pcapPkt, packet);
+        break;
+    case 0x11:
+        res += "$";
+        printf("#######UDP!\n");
+        ip_res += "UDP";
+        res += udpAnalyze(arg, pcapPkt, packet);
         break;
     default:
         printf("Other Transport Layer protocol!\n");
         res += "Other";
+        ip_res += "Other";
         break;
     }
-    return res;
+
+    printf("\n");
+    return res+"@"+ip_res;
 }
