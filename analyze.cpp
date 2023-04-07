@@ -1,7 +1,4 @@
 #include "analyze.h"
-#include <cstdio>
-#include <netinet/in.h>
-#include <cstring>
 #include <pcap.h>
 #include "protocol.h"
 

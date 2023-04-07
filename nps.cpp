@@ -1,8 +1,5 @@
 #include "nps.h"
 #include "ui_nps.h"
-#include <pcap.h>
-#include "protocol.h"
-#include "analyze.h"
 #include "pcap_thread.h"
 
 #define PROM 1

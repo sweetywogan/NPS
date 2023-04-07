@@ -13,7 +13,6 @@ signals:
 
 protected:
     void run();
-
     void sniffer();
 };
 
