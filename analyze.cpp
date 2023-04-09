@@ -376,6 +376,7 @@ QString analyze::ipAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, const
         res += icmpAnalyze(arg, pcapPkt, packet);
         break;
     case 0x02:
+        res += "$";
         printf("#######IGMP!\n");
         res += "IGMP";
         ip_res += "IGMP";
@@ -393,6 +394,7 @@ QString analyze::ipAnalyze(u_char *arg, const struct pcap_pkthdr *pcapPkt, const
         res += udpAnalyze(arg, pcapPkt, packet);
         break;
     default:
+        res += "$";
         printf("Other Transport Layer protocol!\n");
         res += "Other";
         ip_res += "Other";
