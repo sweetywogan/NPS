@@ -1,30 +1,41 @@
 # NPS
 
-## 运行
+## 系统环境
+
 ```
-cd /build.../
+运行环境：ubuntu 20.04（内核版本：5.15.0-69-generic)
+开发环境：Qt5.14.0,libcpap
+```
+
+## 运行
+
+```
+# 进到 build目录下
+cd build.../
+# 运行 打开网络设备需管理员权限
 sudo ./NPS
 ```
-packet_res 结构：
-num:
-	num
+## packet_res 结构
+```
+num
 @
-数据链路层：
+数据链路层
 @
-网络层：
+网络层
 $
-传输层：
+传输层
 @
 headitem:
-
-	sourceip#destinationip#protocal
+	IPsource#IPdestination#protocal
 @
-数据包长度：
+数据包长度
 @
-原始数据包：
-@
+原始数据包
+```
 
+例如：
 
+```
 num:800
 @
 Mac source: 00:50:56:ee:47:ac
@@ -58,7 +69,6 @@ Urgent pointer: 4224
 @
 170
 @
-原始数据包：
 00 0c 29 9d 1b f4 00 50 56 ee 47 ac 08 00 45 00 
 00 9c c8 1a 00 00 80 06 36 0d 24 6e c0 9c c0 a8 
 96 81 01 bb 8a fc 4e 7b 25 1c f6 27 10 80 50 18 
@@ -70,3 +80,4 @@ a1 2f 9b df 98 6a 4c 33 f3 77 b3 55 3a e1 88 9a
 8a 2a 29 f8 17 03 03 00 21 00 00 00 00 00 00 00 
 04 32 14 7d 94 01 f1 7e 88 18 fc 36 c2 96 e2 f8 
 cb df 4d 57 5e e2 53 f1 42 79 
+```
